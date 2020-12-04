@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-# local 
+# local
 import paper_getter
 
 # external modules
@@ -46,7 +46,9 @@ def user_log(update, ts: str = None, remarks: str = ""):
     username: str = update.message.chat.username
     id: str = update.message.chat.id
     name: str = f"{first_name} {last_name}"
-    record: str = f"{ts} - id({id}) - username({username}) - name({name}) - visited({remarks})\n"
+    record: str = (
+        f"{ts} - id({id}) - username({username}) - name({name}) - visited({remarks})\n"
+    )
     user_log_fp: Path = logs_path / "user_visit_history.txt"
     with user_log_fp.open(mode="a") as f:
         f.write(record)
@@ -58,9 +60,7 @@ def error(update, context):
 
 
 def start(update, context):
-    msg = "Hi {}, this is paper bot".format(
-        update.message.chat.first_name
-    )
+    msg = "Hi {}, this is paper bot".format(update.message.chat.first_name)
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
     user_log(update, remarks="/start")
 
@@ -69,6 +69,7 @@ def help(update, context):
     msg = "Currently I can only accpet arxiv.org url"
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
     user_log(update, remarks="/help")
+
 
 def source(update, context):
     msg = "View source / contribute / report issue on [GitHub](https://github.com/MarkHershey/paperbot)"
@@ -79,14 +80,15 @@ def source(update, context):
 def respond_paper_info_from_url(update, context):
     # context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
     try:
-       paper = paper_getter.get_paper(update.message.text)
-       msg = "*Paper*: {}\n\n*Author*: {}\n\n*PDF*: {}".format(paper.title, paper.first_author, paper.pdf_url)
-       print(msg)
+        paper = paper_getter.get_paper(update.message.text)
+        msg = "*Paper*: {}\n\n*Author*: {}\n\n*PDF*: {}".format(
+            paper.title, paper.first_author, paper.pdf_url
+        )
+        print(msg)
     except Exception as err:
         msg = str(err)
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
     user_log(update, remarks="respond_paper_info_from_url")
-
 
 
 def main():
@@ -119,7 +121,9 @@ def main():
     dispatcher.add_handler(CommandHandler("source", source))
 
     # Message Handlers
-    url_filter = (Filters.text & (Filters.entity(MessageEntity.URL) | Filters.entity(MessageEntity.TEXT_LINK)))
+    url_filter = Filters.text & (
+        Filters.entity(MessageEntity.URL) | Filters.entity(MessageEntity.TEXT_LINK)
+    )
     dispatcher.add_handler(MessageHandler(url_filter, respond_paper_info_from_url))
 
     # log all errors

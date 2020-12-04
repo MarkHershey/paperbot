@@ -5,6 +5,8 @@ import base64
 from pathlib import Path
 from typing import List, Dict, Tuple
 
+from data.utils import *
+
 import requests
 from bs4 import BeautifulSoup
 from markkk.logger import logger
@@ -12,6 +14,7 @@ from markkk.logger import logger
 project_root = Path(__file__).resolve().parent.parent
 papers_dir = project_root / "papers"
 assert papers_dir.is_dir()
+
 
 class Paper:
     def __init__(
@@ -36,6 +39,30 @@ class Paper:
 
     def __repr__(self):
         return self.title
+
+    def to_dict(self):
+        _dict = {
+            "paper_id": self.paper_id,
+            "title": self.title,
+            "authors": self.authors,
+            "abs_url": self.abs_url,
+            "pdf_url": self.pdf_url,
+            "abstract": self.abstract,
+            "comments": self.comments,
+        }
+        return _dict
+
+    @staticmethod
+    def from_dict(src: dict) -> Dict:
+        return Paper(
+            paper_id=src.get("paper_id"),
+            title=src.get("title"),
+            authors=src.get("authors"),
+            abs_url=src.get("abs_url"),
+            pdf_url=src.get("pdf_url"),
+            abstract=src.get("abstract"),
+            comments=src.get("comments"),
+        )
 
 
 def process_url(url: str) -> Tuple[str]:
@@ -76,13 +103,21 @@ def get_paper(url: str) -> Paper:
         logger.error(err)
         raise Exception("URL not supported")
 
+    # try to get paper from Firebase first
+    paper = get_paper_db(paper_id)
+    if paper:
+        logger.debug("Paper found in database.")
+        return paper
+    else:
+        logger.debug("Paper not found in database.")
+
     response = requests.get(abs_url)
     if response.status_code != 200:
         # TODO: to improve URL validation
         logger.error(f"Cannot connect to {abs_url}")
         raise Exception(f"Cannot connect to {abs_url}")
 
-    # make soup 
+    # make soup
     soup = BeautifulSoup(response.text, "html.parser")
 
     ##### TITLE
@@ -102,7 +137,7 @@ def get_paper(url: str) -> Paper:
     paper_abstract = tmp.pop()
     tmp = paper_abstract.split("\n")
     paper_abstract = " ".join(tmp)
-    logger.debug(f"Paper Abstract: {paper_abstract}")
+    # logger.debug(f"Paper Abstract: {paper_abstract}")
     ##### COMMENTS
     result = soup.find("td", class_="tablecell comments mathjax")
     if result:
@@ -110,8 +145,8 @@ def get_paper(url: str) -> Paper:
         comments = " ".join(comments)
     else:
         comments = ""
-    
-    # get a Paper object 
+
+    # get a Paper object
     paper = Paper(
         paper_id=paper_id,
         title=paper_title,
@@ -144,7 +179,10 @@ def download_pdf(paper: Paper, save_dir=papers_dir) -> Path:
 
 
 if __name__ == "__main__":
+    from data.utils import save_paper
+
     url = "https://arxiv.org/abs/2010.00514"
     pdfurl = "https://arxiv.org/pdf/1811.12432.pdf"
     paper = get_paper(url)
-    download_pdf(paper)
+    # download_pdf(paper)
+    print((paper))

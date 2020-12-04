@@ -1,5 +1,6 @@
 # project
 logs/user_visit_history.txt
+paperbot*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
