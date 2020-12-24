@@ -5,15 +5,32 @@ import base64
 from pathlib import Path
 from typing import List, Dict, Tuple
 
-from data.utils import *
 
 import requests
 from bs4 import BeautifulSoup
 from markkk.logger import logger
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
 
-project_root = Path(__file__).resolve().parent.parent
+# get project root and papers directory
+project_root = Path(__file__).resolve().parent.parent.parent
 papers_dir = project_root / "papers"
 assert papers_dir.is_dir()
+
+
+################## FIREBASE ################################################
+# Use a service account
+cred = credentials.Certificate(
+    "src/data/paperbot-31c08-firebase-adminsdk-gznc7-a2c6188cbc.json"
+)
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+ALL_PAPER_PARENT = "papers"
+ALL_USER_PARENT = "users"
+############################################################################
 
 
 class Paper:
@@ -22,16 +39,18 @@ class Paper:
         paper_id="",
         title="",
         authors=[""],
-        abs_url="",
+        paper_url="",
         pdf_url="",
+        code_url="",
         abstract="",
         comments="",
     ):
         self.paper_id: str = paper_id
         self.title: str = title
         self.authors: List[str] = authors
-        self.abs_url: str = abs_url
+        self.paper_url: str = paper_url
         self.pdf_url: str = pdf_url
+        self.code_url: str = code_url
         self.abstract: str = abstract
         self.comments: str = comments
         # derived
@@ -45,8 +64,9 @@ class Paper:
             "paper_id": self.paper_id,
             "title": self.title,
             "authors": self.authors,
-            "abs_url": self.abs_url,
+            "paper_url": self.paper_url,
             "pdf_url": self.pdf_url,
+            "code_url": self.code_url,
             "abstract": self.abstract,
             "comments": self.comments,
         }
@@ -58,11 +78,15 @@ class Paper:
             paper_id=src.get("paper_id"),
             title=src.get("title"),
             authors=src.get("authors"),
-            abs_url=src.get("abs_url"),
+            paper_url=src.get("paper_url"),
             pdf_url=src.get("pdf_url"),
+            code_url=src.get("code_url"),
             abstract=src.get("abstract"),
             comments=src.get("comments"),
         )
+
+
+########################################################### 
 
 
 def process_url(url: str) -> Tuple[str]:
@@ -71,15 +95,15 @@ def process_url(url: str) -> Tuple[str]:
     if "arxiv.org/abs" in url:
         ## abstract page
         paper_id = get_paper_id_from_url(url)
-        abs_url = url
+        paper_url = url
         pdf_url = f"https://arxiv.org/pdf/{paper_id}.pdf"
-        return paper_id, abs_url, pdf_url
+        return paper_id, paper_url, pdf_url
     elif "arxiv.org/pdf" in url:
         ## pdf page
         paper_id = get_paper_id_from_url(url)
-        abs_url = f"https://arxiv.org/abs/{paper_id}"
+        paper_url = f"https://arxiv.org/abs/{paper_id}"
         pdf_url = url
-        return paper_id, abs_url, pdf_url
+        return paper_id, paper_url, pdf_url
     else:
         logger.error("URL not supported")
         raise Exception("URL not supported")
@@ -98,7 +122,7 @@ def get_paper_id_from_url(url) -> str:
 
 def get_paper(url: str) -> Paper:
     try:
-        paper_id, abs_url, pdf_url = process_url(url)
+        paper_id, paper_url, pdf_url = process_url(url)
     except Exception as err:
         logger.error(err)
         raise Exception("URL not supported")
@@ -111,11 +135,11 @@ def get_paper(url: str) -> Paper:
     else:
         logger.debug("Paper not found in database.")
 
-    response = requests.get(abs_url)
+    response = requests.get(paper_url)
     if response.status_code != 200:
         # TODO: to improve URL validation
-        logger.error(f"Cannot connect to {abs_url}")
-        raise Exception(f"Cannot connect to {abs_url}")
+        logger.error(f"Cannot connect to {paper_url}")
+        raise Exception(f"Cannot connect to {paper_url}")
 
     # make soup
     soup = BeautifulSoup(response.text, "html.parser")
@@ -151,7 +175,7 @@ def get_paper(url: str) -> Paper:
         paper_id=paper_id,
         title=paper_title,
         authors=author_list,
-        abs_url=abs_url,
+        paper_url=paper_url,
         pdf_url=pdf_url,
         abstract=paper_abstract,
         comments=comments,
@@ -178,9 +202,27 @@ def download_pdf(paper: Paper, save_dir=papers_dir) -> Path:
             return False
 
 
-if __name__ == "__main__":
-    from data.utils import save_paper
+def save_paper(paper: Paper, force_overwrite=False):
+    db_ref = db.collection(ALL_PAPER_PARENT).document(paper.paper_id)
+    doc = db_ref.get()
+    if doc.exists and not force_overwrite:
+        return False
+    else:
+        db_ref.set(paper.to_dict())
+        return True
 
+
+def get_paper_db(paper_id: str) -> Paper:
+    db_ref = db.collection(ALL_PAPER_PARENT).document(paper_id)
+    doc = db_ref.get()
+    if doc.exists:
+        paper = Paper.from_dict(doc.to_dict())
+        return paper
+    else:
+        return False
+
+if __name__ == "__main__":
+    
     url = "https://arxiv.org/abs/2010.00514"
     pdfurl = "https://arxiv.org/pdf/1811.12432.pdf"
     paper = get_paper(url)
