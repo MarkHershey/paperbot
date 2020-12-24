@@ -1,11 +1,12 @@
-import os
-import re
-import json
-import base64
+# built-in modules
 from pathlib import Path
 from typing import List, Dict, Tuple
 
+# local
+from helpers import timestamp_now
+from constants import *
 
+# external modules
 import requests
 from bs4 import BeautifulSoup
 from markkk.logger import logger
@@ -14,23 +15,8 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 
 # get project root and papers directory
-project_root = Path(__file__).resolve().parent.parent.parent
 papers_dir = project_root / "papers"
 assert papers_dir.is_dir()
-
-
-################## FIREBASE ################################################
-# Use a service account
-cred = credentials.Certificate(
-    "src/data/paperbot-31c08-firebase-adminsdk-gznc7-a2c6188cbc.json"
-)
-firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
-ALL_PAPER_PARENT = "papers"
-ALL_USER_PARENT = "users"
-############################################################################
 
 
 class Paper:
@@ -85,11 +71,23 @@ class Paper:
             comments=src.get("comments"),
         )
 
+    
 
 ########################################################### 
 
 
 def process_url(url: str) -> Tuple[str]:
+
+    def get_paper_id_from_url(url) -> str:
+        while "/" in url:
+            slash_idx = url.find("/")
+            url = url[slash_idx + 1 :]
+
+        if url.endswith(".pdf"):
+            return url[:-4]
+        else:
+            return url
+
     # TODO: Validate URL
 
     if "arxiv.org/abs" in url:
@@ -109,15 +107,7 @@ def process_url(url: str) -> Tuple[str]:
         raise Exception("URL not supported")
 
 
-def get_paper_id_from_url(url) -> str:
-    while "/" in url:
-        slash_idx = url.find("/")
-        url = url[slash_idx + 1 :]
 
-    if url.endswith(".pdf"):
-        return url[:-4]
-    else:
-        return url
 
 
 def get_paper(url: str) -> Paper:
@@ -128,7 +118,7 @@ def get_paper(url: str) -> Paper:
         raise Exception("URL not supported")
 
     # try to get paper from Firebase first
-    paper = get_paper_db(paper_id)
+    paper = get_paper_from_db(paper_id)
     if paper:
         logger.debug("Paper found in database.")
         return paper
@@ -180,6 +170,7 @@ def get_paper(url: str) -> Paper:
         abstract=paper_abstract,
         comments=comments,
     )
+    save_paper_to_db(paper)
     return paper
 
 
@@ -202,7 +193,7 @@ def download_pdf(paper: Paper, save_dir=papers_dir) -> Path:
             return False
 
 
-def save_paper(paper: Paper, force_overwrite=False):
+def save_paper_to_db(paper: Paper, force_overwrite=False):
     db_ref = db.collection(ALL_PAPER_PARENT).document(paper.paper_id)
     doc = db_ref.get()
     if doc.exists and not force_overwrite:
@@ -212,13 +203,63 @@ def save_paper(paper: Paper, force_overwrite=False):
         return True
 
 
-def get_paper_db(paper_id: str) -> Paper:
+def get_paper_from_db(paper_id: str) -> Paper:
     db_ref = db.collection(ALL_PAPER_PARENT).document(paper_id)
     doc = db_ref.get()
     if doc.exists:
         paper = Paper.from_dict(doc.to_dict())
         return paper
     else:
+        return False
+
+
+class TelegramUser:
+    def __init__(self, username:str, first_name:str = "", last_name:str = ""):
+        self.username : str = username
+        self.first_name : str = first_name
+        self.last_name : str = last_name
+    
+
+def create_new_user_db(user: TelegramUser):
+    db_ref = db.collection(ALL_USER_PARENT).document(user.username)
+    doc = db_ref.get()
+    if doc.exists:
+        logger.error("User already exists")
+        return False
+    else:
+        profile = {
+            "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "user_createdAt": timestamp_now(),
+            "papers": {},
+        }
+        db_ref.set(profile)
+        return True
+
+def add_paper_to_user(paper: Paper, user: TelegramUser):
+    db_ref = db.collection(ALL_USER_PARENT).document(user.username)
+    doc = db_ref.get()
+    if doc.exists:
+        pass
+    else:
+        create_new_user_db(user)
+        doc = db_ref.get()
+    
+    profile = doc.to_dict()
+    userPapers: dict = profile.get("papers")
+    if paper.paper_id not in userPapers:
+        userPapers[paper.paper_id] = {
+            "paper_id": paper.paper_id,
+            "added_at": timestamp_now(),
+            "labels": [],
+            "notes": [],
+        }
+        profile["papers"] = userPapers
+        db_ref.update(profile)
+        return True
+    else:
+        logger.warning("paper already added in the past")
         return False
 
 if __name__ == "__main__":
