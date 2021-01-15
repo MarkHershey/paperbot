@@ -50,18 +50,29 @@ def process_arxiv_url(url: str) -> Tuple[str]:
         logger.error("URL not supported")
         raise Exception("URL not supported")
 
+def process_cvf_url(url: str) -> Tuple[str]:
+    # TODO
+    paper_id = ""
+    paper_url = ""
+    pdf_url = ""
+
+    return paper_id, paper_url, pdf_url
+
+def process_openreview_url(url: str) -> Tuple[str]:
+    # TODO
+    paper_id = ""
+    paper_url = ""
+    pdf_url = ""
+
+    return paper_id, paper_url, pdf_url
 
 def process_url(url: str) -> Tuple[str]:
-    # TODO: Validate URL
-
     if "arxiv.org" in url:
         return process_arxiv_url(url)
     elif "openaccess.thecvf.com" in url:
-        # TODO
-        return # TODO
+        return process_cvf_url(url)
     elif "openreview.net" in url:
-        # TODO 
-        return # TODO
+        return process_openreview_url(url)
     else:
         logger.error("URL not supported")
         raise Exception("URL not supported")
