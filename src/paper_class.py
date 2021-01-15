@@ -1,6 +1,7 @@
 # built-in modules
 from pathlib import Path
 from typing import List, Dict, Tuple
+from datetime import datetime
 
 
 class Paper:
@@ -63,8 +64,8 @@ class Paper:
         return _dict
 
     @staticmethod
-    def from_dict(src_dict: dict):
-        #TODO: dict validations
+    def from_dict(src_dict: dict) -> Paper:
+        # TODO: dict validations
 
         return Paper(
             paper_uid=src_dict.get("paper_uid", ""),
@@ -86,4 +87,79 @@ class Paper:
     def get_first_author(self) -> str:
         return self.authors[0] if self.authors else None
 
+
+class UserPaper:
+    def __init__(
+        self,
+        paper_uid: str = "",
+        reading_note: str = "",
+        reading_status: str = "",
+        labels: List[str] = [],
+        added_at: datetime = None,
+        last_read_at: datetime = None,
+        favorite: bool = False,
+    ):
+        self.paper_uid: str = paper_uid
+        self.reading_note: str = reading_note
+        self.reading_status: str = reading_status
+        self.labels: List[str] = labels
+        self.added_at: datetime = datetime.now() if added_at is None else added_at
+        self.last_read_at: datetime = (
+            self.added_at if last_read_at is None else last_read_at
+        )
+        self.favorite: bool = favorite
+
+    def favorite(self) -> None:
+        self.favorite = True
+
+    def unfavorite(self) -> None:
+        self.favorite = False
+
+    def toggle_favorite(self) -> None:
+        self.favorite = False if self.favorite else True
+
+    def update_reading_note(self, reading_note: str) -> None:
+        self.reading_note = reading_note
     
+    def add_label(self, label: str) -> None:
+        if not isinstance(label, str):
+            raise ValueError("label must be a string")
+        if label not in self.labels:
+            self.labels.append(label)
+    
+    def remove_label(self, label: str) -> None:
+        if not isinstance(label, str):
+            raise ValueError("label must be a string")
+        if label in self.labels:
+            self.labels.remove(label)
+    
+    def update_last_read(self, last_read_at: datetime) -> None:
+        if not isinstance(last_read_at, datetime):
+            raise ValueError("last_read_at must be a datetime object")
+        self.last_read_at = last_read_at
+
+    def to_dict(self) -> dict:
+        _dict = {
+            "paper_uid": self.paper_uid,
+            "reading_note": self.reading_note,
+            "reading_status": self.reading_status,
+            "labels": self.labels,
+            "added_at": self.added_at,
+            "last_read_at": self.last_read_at,
+            "favorite": self.favorite,
+        }
+        return _dict
+
+    @staticmethod
+    def from_dict(src_dict: dict) -> UserPaper:
+        # TODO: dict validations
+
+        return UserPaper(
+            paper_uid=src_dict.get("paper_uid", ""),
+            reading_note=src_dict.get("reading_note", ""),
+            reading_status=src_dict.get("reading_status", ""),
+            labels=src_dict.get("labels", []),
+            added_at=src_dict.get("added_at", None),
+            last_read_at=src_dict.get("last_read_at", None),
+            favorite=src_dict.get("favorite", False),
+        )
