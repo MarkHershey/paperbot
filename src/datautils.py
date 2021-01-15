@@ -42,10 +42,10 @@ class Paper:
         # derived
         self.first_author = self.authors[0]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.title
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         _dict = {
             "paper_id": self.paper_id,
             "title": self.title,
@@ -59,7 +59,7 @@ class Paper:
         return _dict
 
     @staticmethod
-    def from_dict(src: dict) -> Dict:
+    def from_dict(src: dict):
         return Paper(
             paper_id=src.get("paper_id"),
             title=src.get("title"),
@@ -134,10 +134,18 @@ def get_paper(url: str) -> Paper:
     # make soup
     soup = BeautifulSoup(response.text, "html.parser")
 
+    # make paper dict 
+    paper_dict = {
+            "paper_id": paper_id,
+            "paper_url": paper_url,
+            "pdf_url": pdf_url,
+        }
+
     ##### TITLE
     result = soup.find("h1", class_="title mathjax")
     tmp = [i.string for i in result]
     paper_title = tmp.pop()
+    paper_dict["title"] = paper_title
     logger.debug(f"Paper Title: {paper_title}")
     ##### AUTHORS
     result = soup.find("div", class_="authors")
@@ -145,12 +153,14 @@ def get_paper(url: str) -> Paper:
     author_list.pop(0)
     while "," in author_list:
         author_list.remove(",")
+    paper_dict["authors"] = author_list
     ##### ABSTRACT
     result = soup.find("blockquote", class_="abstract mathjax")
     tmp = [i.string for i in result]
     paper_abstract = tmp.pop()
     tmp = paper_abstract.split("\n")
     paper_abstract = " ".join(tmp)
+    paper_dict["abstract"] = paper_abstract
     # logger.debug(f"Paper Abstract: {paper_abstract}")
     ##### COMMENTS
     result = soup.find("td", class_="tablecell comments mathjax")
@@ -159,17 +169,11 @@ def get_paper(url: str) -> Paper:
         comments = " ".join(comments)
     else:
         comments = ""
+    
+    paper_dict["comments"] = comments
 
     # get a Paper object
-    paper = Paper(
-        paper_id=paper_id,
-        title=paper_title,
-        authors=author_list,
-        paper_url=paper_url,
-        pdf_url=pdf_url,
-        abstract=paper_abstract,
-        comments=comments,
-    )
+    paper = Paper.from_dict(paper_dict)
     save_paper_to_db(paper)
     return paper
 
