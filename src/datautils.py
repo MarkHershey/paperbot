@@ -5,6 +5,7 @@ from typing import List, Dict, Tuple
 # local
 from helpers import timestamp_now
 from constants import *
+from paper_class import Paper
 
 # external modules
 import requests
@@ -19,76 +20,19 @@ papers_dir = project_root / "papers"
 assert papers_dir.is_dir()
 
 
-class Paper:
-    def __init__(
-        self,
-        paper_id="",
-        title="",
-        authors=[""],
-        paper_url="",
-        pdf_url="",
-        code_url="",
-        abstract="",
-        comments="",
-    ):
-        self.paper_id: str = paper_id
-        self.title: str = title
-        self.authors: List[str] = authors
-        self.paper_url: str = paper_url
-        self.pdf_url: str = pdf_url
-        self.code_url: str = code_url
-        self.abstract: str = abstract
-        self.comments: str = comments
-        # derived
-        self.first_author = self.authors[0]
-
-    def __repr__(self) -> str:
-        return self.title
-
-    def to_dict(self) -> dict:
-        _dict = {
-            "paper_id": self.paper_id,
-            "title": self.title,
-            "authors": self.authors,
-            "paper_url": self.paper_url,
-            "pdf_url": self.pdf_url,
-            "code_url": self.code_url,
-            "abstract": self.abstract,
-            "comments": self.comments,
-        }
-        return _dict
-
-    @staticmethod
-    def from_dict(src: dict):
-        return Paper(
-            paper_id=src.get("paper_id"),
-            title=src.get("title"),
-            authors=src.get("authors"),
-            paper_url=src.get("paper_url"),
-            pdf_url=src.get("pdf_url"),
-            code_url=src.get("code_url"),
-            abstract=src.get("abstract"),
-            comments=src.get("comments"),
-        )
-
-    
 
 ########################################################### 
 
-
-def process_url(url: str) -> Tuple[str]:
+def process_arxiv_url(url: str) -> Tuple[str]:
 
     def get_paper_id_from_url(url) -> str:
         while "/" in url:
             slash_idx = url.find("/")
             url = url[slash_idx + 1 :]
-
         if url.endswith(".pdf"):
             return url[:-4]
         else:
             return url
-
-    # TODO: Validate URL
 
     if "arxiv.org/abs" in url:
         ## abstract page
@@ -107,6 +51,20 @@ def process_url(url: str) -> Tuple[str]:
         raise Exception("URL not supported")
 
 
+def process_url(url: str) -> Tuple[str]:
+    # TODO: Validate URL
+
+    if "arxiv.org" in url:
+        return process_arxiv_url(url)
+    elif "openaccess.thecvf.com" in url:
+        # TODO
+        return # TODO
+    elif "openreview.net" in url:
+        # TODO 
+        return # TODO
+    else:
+        logger.error("URL not supported")
+        raise Exception("URL not supported")
 
 
 
