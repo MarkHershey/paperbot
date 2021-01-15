@@ -3,14 +3,15 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 
 # local
-from helpers import timestamp_now
 from constants import *
 from paper_class import Paper
+from url_handlers import process_arxiv_url, process_cvf_url, process_openreview_url
 
 # external modules
 import requests
 from bs4 import BeautifulSoup
 from markkk.logger import logger
+from markkk.time import timestamp_seconds
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -20,51 +21,15 @@ papers_dir = project_root / "papers"
 assert papers_dir.is_dir()
 
 
+class TelegramUser:
+    def __init__(self, username: str, first_name: str = "", last_name: str = ""):
+        self.username: str = username
+        self.first_name: str = first_name
+        self.last_name: str = last_name
 
-########################################################### 
 
-def process_arxiv_url(url: str) -> Tuple[str]:
+###########################################################
 
-    def get_paper_id_from_url(url) -> str:
-        while "/" in url:
-            slash_idx = url.find("/")
-            url = url[slash_idx + 1 :]
-        if url.endswith(".pdf"):
-            return url[:-4]
-        else:
-            return url
-
-    if "arxiv.org/abs" in url:
-        ## abstract page
-        paper_id = get_paper_id_from_url(url)
-        paper_url = url
-        pdf_url = f"https://arxiv.org/pdf/{paper_id}.pdf"
-        return paper_id, paper_url, pdf_url
-    elif "arxiv.org/pdf" in url:
-        ## pdf page
-        paper_id = get_paper_id_from_url(url)
-        paper_url = f"https://arxiv.org/abs/{paper_id}"
-        pdf_url = url
-        return paper_id, paper_url, pdf_url
-    else:
-        logger.error("URL not supported")
-        raise Exception("URL not supported")
-
-def process_cvf_url(url: str) -> Tuple[str]:
-    # TODO
-    paper_id = ""
-    paper_url = ""
-    pdf_url = ""
-
-    return paper_id, paper_url, pdf_url
-
-def process_openreview_url(url: str) -> Tuple[str]:
-    # TODO
-    paper_id = ""
-    paper_url = ""
-    pdf_url = ""
-
-    return paper_id, paper_url, pdf_url
 
 def process_url(url: str) -> Tuple[str]:
     if "arxiv.org" in url:
@@ -76,7 +41,6 @@ def process_url(url: str) -> Tuple[str]:
     else:
         logger.error("URL not supported")
         raise Exception("URL not supported")
-
 
 
 def get_paper(url: str) -> Paper:
@@ -103,12 +67,12 @@ def get_paper(url: str) -> Paper:
     # make soup
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # make paper dict 
+    # make paper dict
     paper_dict = {
-            "paper_id": paper_id,
-            "paper_url": paper_url,
-            "pdf_url": pdf_url,
-        }
+        "paper_id": paper_id,
+        "paper_url": paper_url,
+        "pdf_url": pdf_url,
+    }
 
     ##### TITLE
     result = soup.find("h1", class_="title mathjax")
@@ -138,7 +102,7 @@ def get_paper(url: str) -> Paper:
         comments = " ".join(comments)
     else:
         comments = ""
-    
+
     paper_dict["comments"] = comments
 
     # get a Paper object
@@ -186,13 +150,6 @@ def get_paper_from_db(paper_id: str) -> Paper:
         return False
 
 
-class TelegramUser:
-    def __init__(self, username:str, first_name:str = "", last_name:str = ""):
-        self.username : str = username
-        self.first_name : str = first_name
-        self.last_name : str = last_name
-    
-
 def create_new_user_db(user: TelegramUser):
     db_ref = db.collection(ALL_USER_PARENT).document(user.username)
     doc = db_ref.get()
@@ -204,11 +161,12 @@ def create_new_user_db(user: TelegramUser):
             "username": user.username,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "user_createdAt": timestamp_now(),
+            "user_createdAt": timestamp_seconds(),
             "papers": {},
         }
         db_ref.set(profile)
         return True
+
 
 def add_paper_to_user(paper: Paper, user: TelegramUser):
     db_ref = db.collection(ALL_USER_PARENT).document(user.username)
@@ -218,13 +176,13 @@ def add_paper_to_user(paper: Paper, user: TelegramUser):
     else:
         create_new_user_db(user)
         doc = db_ref.get()
-    
+
     profile = doc.to_dict()
     userPapers: dict = profile.get("papers")
     if paper.paper_id not in userPapers:
         userPapers[paper.paper_id] = {
             "paper_id": paper.paper_id,
-            "added_at": timestamp_now(),
+            "added_at": timestamp_seconds(),
             "labels": [],
             "notes": [],
         }
@@ -235,8 +193,9 @@ def add_paper_to_user(paper: Paper, user: TelegramUser):
         logger.warning("paper already added in the past")
         return False
 
+
 if __name__ == "__main__":
-    
+
     url = "https://arxiv.org/abs/2010.00514"
     pdfurl = "https://arxiv.org/pdf/1811.12432.pdf"
     paper = get_paper(url)

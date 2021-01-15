@@ -120,19 +120,19 @@ class UserPaper:
 
     def update_reading_note(self, reading_note: str) -> None:
         self.reading_note = reading_note
-    
+
     def add_label(self, label: str) -> None:
         if not isinstance(label, str):
             raise ValueError("label must be a string")
         if label not in self.labels:
             self.labels.append(label)
-    
+
     def remove_label(self, label: str) -> None:
         if not isinstance(label, str):
             raise ValueError("label must be a string")
         if label in self.labels:
             self.labels.remove(label)
-    
+
     def update_last_read(self, last_read_at: datetime) -> None:
         if not isinstance(last_read_at, datetime):
             raise ValueError("last_read_at must be a datetime object")

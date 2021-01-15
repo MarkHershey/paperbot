@@ -5,7 +5,6 @@ from pathlib import Path
 from datetime import datetime
 
 # local
-from helpers import timestamp_now
 from datautils import get_paper, TelegramUser, create_new_user_db, add_paper_to_user
 from constants import project_root
 
@@ -20,6 +19,7 @@ from telegram.ext import (
     Filters,
 )
 from markkk.logger import logger
+from markkk.time import timestamp_microseconds
 
 
 logs_path: Path = project_root / "logs"
@@ -30,20 +30,20 @@ if not logs_path.is_dir():
 ##############################################
 # user log function
 
+
 def user_log(update, ts: str = None, remarks: str = ""):
     if not ts:
-        ts: str = timestamp_now()
+        ts: str = timestamp_microseconds()
     first_name: str = update.message.chat.first_name
     last_name: str = update.message.chat.last_name
     username: str = update.message.chat.username
     chat_id: str = update.message.chat.id
     name: str = f"{first_name} {last_name}"
-    record: str = (
-        f"{ts} - chat_id({chat_id}) - username({username}) - name({name}) - visited({remarks})\n"
-    )
+    record: str = f"{ts} - chat_id({chat_id}) - username({username}) - name({name}) - visited({remarks})\n"
     user_log_fp: Path = logs_path / "user_visit_history.txt"
     with user_log_fp.open(mode="a") as f:
         f.write(record)
+
 
 def get_current_telegram_user(update) -> TelegramUser:
     first_name: str = update.message.chat.first_name
@@ -60,12 +60,14 @@ def error(update, context):
     """
     logger.error(f'Update "{update}" \ncaused following error: \n"{context.error}"')
 
+
 ##############################################
 # Command Handlers
 
+
 def start(update, context):
     """
-    Command Handler: /start 
+    Command Handler: /start
     """
     user = get_current_telegram_user(update)
     msg = f"Hi {user.first_name}, this is paper bot"
@@ -76,7 +78,7 @@ def start(update, context):
 
 def help(update, context):
     """
-    Command Handler: /help 
+    Command Handler: /help
     """
     msg = "Currently I can only accpet arxiv.org url"
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
@@ -91,8 +93,10 @@ def source(update, context):
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
     user_log(update, remarks="/source")
 
+
 ############################################################################################
-# MessageHandlers 
+# MessageHandlers
+
 
 def url_MsgHandler(update, context):
     # context.bot.send_message(chat_id=update.effective_chat.id, text=update.message.text)
@@ -121,13 +125,14 @@ def url_MsgHandler(update, context):
         logger.error(err)
         msg = "Internal Server Error"
         # msg = telegram.utils.helpers.escape_markdown(msg)
-    
+
     # respond to user
     update.message.reply_text(msg, parse_mode=telegram.ParseMode.MARKDOWN)
     user_log(update, remarks="respond_paper_info_from_url")
 
 
 ############################################################################################
+
 
 def main():
     """

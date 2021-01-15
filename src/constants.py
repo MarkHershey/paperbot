@@ -7,7 +7,7 @@ from firebase_admin import firestore
 ################## FIREBASE ################################################
 # Use a service account
 _cred = credentials.Certificate(
-    "src/paperbot-31c08-firebase-adminsdk-gznc7-5b4edd1da0.json"
+    "src/data/paperbot-31c08-firebase-adminsdk-gznc7-5b4edd1da0.json"
 )
 firebase_admin.initialize_app(_cred)
 
