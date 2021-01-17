@@ -14,7 +14,7 @@ class Paper:
         paper_url="",
         pdf_url="",
         abstract="",
-        one_sentence_summary="",
+        tldr="",
         keywords=[],
         public_comments="",
         year="",
@@ -29,7 +29,7 @@ class Paper:
         self.paper_url: str = paper_url
         self.pdf_url: str = pdf_url
         self.abstract: str = abstract
-        self.one_sentence_summary: str = one_sentence_summary
+        self.tldr: str = tldr
         self.keywords: List[str] = keywords
         self.public_comments: str = public_comments
         self.year: str = year
@@ -52,7 +52,7 @@ class Paper:
             "paper_url": self.paper_url,
             "pdf_url": self.pdf_url,
             "abstract": self.abstract,
-            "one_sentence_summary": self.one_sentence_summary,
+            "tldr": self.tldr,
             "keywords": self.keywords,
             "public_comments": self.public_comments,
             "year": self.year,
@@ -64,7 +64,7 @@ class Paper:
         return _dict
 
     @staticmethod
-    def from_dict(src_dict: dict) -> Paper:
+    def from_dict(src_dict: dict):
         # TODO: dict validations
 
         return Paper(
@@ -75,7 +75,7 @@ class Paper:
             paper_url=src_dict.get("paper_url", ""),
             pdf_url=src_dict.get("pdf_url", ""),
             abstract=src_dict.get("abstract", ""),
-            one_sentence_summary=src_dict.get("one_sentence_summary", ""),
+            tldr=src_dict.get("tldr", ""),
             keywords=src_dict.get("keywords", []),
             public_comments=src_dict.get("public_comments", ""),
             year=src_dict.get("year", ""),
@@ -151,7 +151,7 @@ class UserPaper:
         return _dict
 
     @staticmethod
-    def from_dict(src_dict: dict) -> UserPaper:
+    def from_dict(src_dict: dict):
         # TODO: dict validations
 
         return UserPaper(
