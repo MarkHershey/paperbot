@@ -20,5 +20,5 @@ ALL_USER_PARENT = "users"
 ############################################################################
 
 
-# get project root and papers directory
+# get project root
 project_root: Path = Path(__file__).resolve().parent.parent
