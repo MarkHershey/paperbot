@@ -1,6 +1,7 @@
 # project
 logs/user_visit_history.txt
 paperbot*.json
+dev/
 
 # OS generated files #
 .DS_Store
