@@ -1,7 +1,8 @@
-import unittest
-import requests
 import sys
+import unittest
 from pathlib import Path
+
+import requests
 
 # get project root
 project_root: Path = Path(__file__).resolve().parent.parent
@@ -10,7 +11,6 @@ src_dir = project_root / "src"
 sys.path.insert(0, str(src_dir))
 
 from url_handlers import process_arxiv_url, process_cvf_url, process_openreview_url
-
 
 _arxiv_urls = [
     "https://arxiv.org/abs/1405.4053",

@@ -6,6 +6,32 @@ from typing import Dict, List, Tuple
 # external modules
 from markkk.logger import logger
 
+__all__ = ["process_url"]
+
+
+def process_url(url: str) -> Dict[str, str]:
+    if "arxiv.org" in url:
+        src_website = "arxiv"
+        paper_id, paper_url, pdf_url = process_arxiv_url(url)
+    elif "openaccess.thecvf.com" in url:
+        src_website = "cvf"
+        paper_id, paper_url, pdf_url = process_cvf_url(url)
+    elif "openreview.net" in url:
+        src_website = "openreview"
+        paper_id, paper_url, pdf_url = process_openreview_url(url)
+    else:
+        logger.error("URL not supported")
+        raise Exception("URL not supported")
+
+    tmp_paper_dict = {
+        "paper_id": paper_id,
+        "paper_url": paper_url,
+        "pdf_url": pdf_url,
+        "src_website": src_website,
+    }
+
+    return tmp_paper_dict
+
 
 def process_arxiv_url(url: str) -> Tuple[str]:
     def get_paper_id_from_url(url) -> str:
@@ -155,10 +181,10 @@ def process_openreview_url(url: str) -> Tuple[str]:
 if __name__ == "__main__":
     from pprint import pprint
 
-    pprint(process_arxiv_url("https://arxiv.org/abs/1301.3781"))
+    pprint(process_url("https://arxiv.org/abs/1301.3781"))
     pprint(
-        process_cvf_url(
+        process_url(
             "https://openaccess.thecvf.com/content_CVPR_2020/papers/Kim_Advisable_Learning_for_Self-Driving_Vehicles_by_Internalizing_Observation-to-Action_Rules_CVPR_2020_paper.pdf"
         )
     )
-    pprint(process_openreview_url("https://openreview.net/forum?id=H1lj0nNFwB"))
+    pprint(process_url("https://openreview.net/forum?id=H1lj0nNFwB"))

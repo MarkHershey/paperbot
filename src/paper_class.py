@@ -20,7 +20,7 @@ class Paper:
         year="",
         published_at="",
         bibtex="",
-        source_site="",
+        src_website="",
     ):
         self.paper_uid = paper_uid
         self.paper_id: str = paper_id
@@ -35,7 +35,7 @@ class Paper:
         self.year: str = year
         self.published_at: str = published_at
         self.bibtex: str = bibtex
-        self.source_site: str = source_site
+        self.src_website: str = src_website
 
         # derived
         self.first_author = self.authors[0] if self.authors else ""
@@ -58,7 +58,7 @@ class Paper:
             "year": self.year,
             "published_at": self.published_at,
             "bibtex": self.bibtex,
-            "source_site": self.source_site,
+            "src_website": self.src_website,
             "first_author": self.first_author,
         }
         return _dict
@@ -81,7 +81,7 @@ class Paper:
             year=src_dict.get("year", ""),
             published_at=src_dict.get("published_at", ""),
             bibtex=src_dict.get("bibtex", ""),
-            source_site=src_dict.get("source_site", ""),
+            src_website=src_dict.get("src_website", ""),
         )
 
     def get_first_author(self) -> str:
