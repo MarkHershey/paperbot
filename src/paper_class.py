@@ -1,7 +1,7 @@
 # built-in modules
-from pathlib import Path
-from typing import List, Dict, Tuple
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 class Paper:

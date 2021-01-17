@@ -1,20 +1,20 @@
 # built-in modules
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
+
+import firebase_admin
+
+# external modules
+import requests
+from bs4 import BeautifulSoup
+from firebase_admin import credentials, firestore
+from markkk.logger import logger
+from markkk.time import timestamp_seconds
 
 # local
 from constants import *
 from paper_class import Paper
 from url_handlers import process_arxiv_url, process_cvf_url, process_openreview_url
-
-# external modules
-import requests
-from bs4 import BeautifulSoup
-from markkk.logger import logger
-from markkk.time import timestamp_seconds
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
 
 # get project root and papers directory
 papers_dir = project_root / "papers"

@@ -1,7 +1,7 @@
 # built-in modules
 import re
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 # external modules
 from markkk.logger import logger
@@ -30,8 +30,8 @@ def process_arxiv_url(url: str) -> Tuple[str]:
         pdf_url = url
         return paper_id, paper_url, pdf_url
     else:
-        logger.error("URL not supported")
-        raise Exception("URL not supported")
+        logger.error("Unexpected URL Error by arxiv URL Handler.")
+        raise Exception("Unexpected URL Error by arxiv URL Handler.")
 
 
 def process_cvf_url(url: str) -> Tuple[str]:
@@ -44,6 +44,11 @@ def process_cvf_url(url: str) -> Tuple[str]:
     end: '.html'
     ==> url = start + context + pg_type + name + end
     """
+
+    # url validation
+    if "openaccess.thecvf.com" not in url:
+        logger.error("Unexpected URL Error by CVF URL Handler.")
+        raise Exception("Unexpected URL Error by CVF URL Handler.")
 
     def get_paper_id(url) -> str:
         """
@@ -92,8 +97,8 @@ def process_cvf_url(url: str) -> Tuple[str]:
         pdf_url = url
         return paper_id, paper_url, pdf_url
     else:
-        logger.error("URL not supported")
-        raise Exception("URL not supported")
+        logger.error("Unexpected URL Error by CVF URL Handler.")
+        raise Exception("Unexpected URL Error by CVF URL Handler.")
 
 
 def process_openreview_url(url: str) -> Tuple[str]:
@@ -105,6 +110,11 @@ def process_openreview_url(url: str) -> Tuple[str]:
     paper_id: 'nlAxjsniDzg'
     ==> url = start + pg_type + mid + paper_id
     """
+
+    # url validation
+    if "openreview.net" not in url:
+        logger.error("Unexpected URL Error by openreview URL Handler.")
+        raise Exception("Unexpected URL Error by openreview URL Handler.")
 
     def get_paper_id(url) -> str:
         while "/" in url:
@@ -120,7 +130,7 @@ def process_openreview_url(url: str) -> Tuple[str]:
         if parse_mode == "abs":
             pg_type = "forum"
         elif parse_mode == "pdf":
-            pg_type = "/papers/"
+            pg_type = "pdf"
         else:
             raise Exception("parse_mode error")
         url = start + pg_type + mid + paper_id
@@ -138,5 +148,17 @@ def process_openreview_url(url: str) -> Tuple[str]:
         pdf_url = url
         return paper_id, paper_url, pdf_url
     else:
-        logger.error("URL not supported")
-        raise Exception("URL not supported")
+        logger.error("Unexpected URL Error by openreview URL Handler.")
+        raise Exception("Unexpected URL Error by openreview URL Handler.")
+
+
+if __name__ == "__main__":
+    from pprint import pprint
+
+    pprint(process_arxiv_url("https://arxiv.org/abs/1301.3781"))
+    pprint(
+        process_cvf_url(
+            "https://openaccess.thecvf.com/content_CVPR_2020/papers/Kim_Advisable_Learning_for_Self-Driving_Vehicles_by_Internalizing_Observation-to-Action_Rules_CVPR_2020_paper.pdf"
+        )
+    )
+    pprint(process_openreview_url("https://openreview.net/forum?id=H1lj0nNFwB"))
